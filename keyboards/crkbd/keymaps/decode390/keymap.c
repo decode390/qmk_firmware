@@ -27,6 +27,7 @@ enum custom_keycodes {
 
 // Variables para mantener Alt presionado
 bool is_alt_tab_active = false;
+bool alt_tab_alt_registered = false;
 
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -36,6 +37,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case ALT_TAB:
       if (record->event.pressed && is_alt_tab_active) {
         register_code(KC_LALT);
+        alt_tab_alt_registered = true;
         tap_code(KC_TAB);
       }
       return false;
@@ -46,29 +48,30 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         is_alt_tab_active = true;
       } else {
         is_alt_tab_active = false;
-        unregister_code(KC_LALT);
+        if (alt_tab_alt_registered) {
+          unregister_code(KC_LALT);
+          alt_tab_alt_registered = false;
+        }
       }
       return true;
 
-    case LEFT_DESK:
-      if (record->event.pressed) {
-        register_code(KC_LWIN);
-        register_code(KC_LCTL);
-        tap_code(KC_LEFT);
-        unregister_code(KC_LWIN);
-        unregister_code(KC_LCTL);
-      }
-      return false;
+    case LEFT_DESK:  // Z in Layer 1 → prev workspace
+        if (record->event.pressed) {
+            register_code(KC_LWIN);
+            register_code(KC_LSFT);
+            tap_code(KC_TAB);
+            unregister_code(KC_LSFT);
+            unregister_code(KC_LWIN);
+        }
+        return false;
 
-    case RIGHT_DESK:
-      if (record->event.pressed) {
-        register_code(KC_LWIN);
-        register_code(KC_LCTL);
-        tap_code(KC_RIGHT);
-        unregister_code(KC_LWIN);
-        unregister_code(KC_LCTL);
-      }
-      return false;
+    case RIGHT_DESK:  // X in Layer 1 → next workspace
+        if (record->event.pressed) {
+            register_code(KC_LWIN);
+            tap_code(KC_TAB);
+            unregister_code(KC_LWIN);
+        }
+        return false;
   }
 
   return true;
@@ -79,22 +82,22 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //,-----------------------------------------------------.                    ,-----------------------------------------------------.
        KC_TAB,    KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,                         KC_Y,    KC_U,    KC_I,    KC_O,   KC_P,  KC_BSPC,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      KC_CAPS,    KC_A,    KC_S,    KC_D,    KC_F,    KC_G,                         KC_H,    KC_J,    KC_K,    KC_L, KC_SCLN, KC_QUOT,
+      KC_LGUI,    KC_A,    KC_S,    KC_D,    KC_F,    KC_G,                         KC_H,    KC_J,    KC_K,    KC_L, KC_SCLN, KC_QUOT,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
        KC_ESC,    KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,                         KC_N,    KC_M, KC_COMM,  KC_DOT, KC_SLSH, KC_MINS,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
-                        KC_LCTL,   MO(1), KC_LSFT,                       KC_SPC,   MO(2),  KC_ENT
+                        KC_LCTL,   MO(1), KC_LSFT,                       KC_SPC,   MO(2), LALT_T(KC_ENT)
                                       //`--------------------------'  `--------------------------'
 
-  ), 
+  ),
 
     [1] = LAYOUT_split_3x6_3(
   //,-----------------------------------------------------.                    ,-----------------------------------------------------.
-      ALT_TAB,    KC_1, _______,    KC_3,    KC_4,    KC_5,                      KC_HOME, KC_PGDN, KC_PGUP,  KC_END, XXXXXXX, XXXXXXX,
+      ALT_TAB,LGUI(KC_1),LGUI(KC_2),LGUI(KC_3),LGUI(KC_4),LGUI(KC_5),            KC_HOME, KC_PGDN, KC_PGUP,  KC_END, XXXXXXX, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      KC_LWIN, _______, _______, _______,    KC_G, XXXXXXX,                      KC_LEFT, KC_DOWN,   KC_UP,KC_RIGHT, XXXXXXX, XXXXXXX,
+      KC_CAPS, _______, _______, _______,    KC_G, XXXXXXX,                      KC_LEFT, KC_DOWN,   KC_UP,KC_RIGHT, XXXXXXX, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------|                    |--------+--------+--------+--------+--------+--------|
-      _______,LEFT_DESK,RIGHT_DESK,    KC_2, KC_LALT,  KC_F13,                      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+      _______,LEFT_DESK,RIGHT_DESK,    KC_2, KC_LALT,  KC_F13,             LGUI(KC_LEFT),LGUI(KC_DOWN),LGUI(KC_UP),LGUI(KC_RIGHT), XXXXXXX, XXXXXXX,
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
                                           XXXXXXX, _______, XXXXXXX,    KC_LALT,   MO(3), KC_RALT
                                       //`--------------------------'  `--------------------------'
@@ -137,8 +140,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------+--------|  |--------+--------+--------+--------+--------+--------+--------|
                                     KC_LCTL,   MO(5),  KC_SPC,             KC_SPC,   MO(6), KC_ENT
                                       //`--------------------------'  `--------------------------'
-  ), 
-  
+  ),
+
     [5] = LAYOUT_split_3x6_3(
   //,-----------------------------------------------------.                    ,-----------------------------------------------------.
       ALT_TAB,    KC_V, _______,    KC_U,    KC_4,    KC_5,                      KC_HOME, KC_PGDN, KC_PGUP,  KC_END, XXXXXXX, XXXXXXX,
